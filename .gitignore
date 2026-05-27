@@ -1,0 +1,73 @@
+# Dependencies
+node_modules/
+**/node_modules/
+venv/
+.venv/
+**/venv/
+**/.venv/
+__pycache__/
+**/__pycache__/
+*.pyc
+*.pyo
+
+# Build outputs
+dist/
+**/dist/
+build/
+
+# IDE / Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+$RECYCLE.BIN/
+
+# Env files (sensitive)
+.env
+.env.*
+!.env.example
+
+# Vercel
+.vercel/
+**/.vercel/
+.vercel
+
+# Taro
+.swc/
+**/.swc/
+
+# Cloudflare
+.wrangler/
+**/.wrangler/
+
+# Database files (local)
+*.db
+*.sqlite
+*.sqlite3
+
+# Logs
+*.log
+logs/
+
+# Python
+*.egg-info/
+*.egg
+.eggs/
+
+# Claude
+.claude/
+**/.claude/
+
+# VM (virtual machines)
+vm/
+**/vm/
+
+# Misc
+*.zip
+*.tar.gz
+*.7z

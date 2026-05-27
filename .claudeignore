@@ -1,0 +1,43 @@
+# Dependencies
+node_modules/
+**/node_modules/
+**/venv/
+**/.venv/
+**/__pycache__/
+
+# Build outputs
+dist/
+**/dist/
+*.pyc
+__pycache__/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Large files
+*.zip
+*.tar.gz
+*.7z
+
+# Vercel
+.vercel/output/
+**/.vercel/output/
+
+# Taro
+**/.swc/
+
+# Cloudflare
+**/.wrangler/
+
+# Sensitive (don't send to Claude)
+**/.env
+**/.env.*
+!.env.example
+**/.env.production.local

@@ -1,0 +1,33 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+* {
+  -webkit-tap-highlight-color: transparent;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+input, textarea, select {
+  -webkit-user-select: text;
+  user-select: text;
+}
+
+body {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Hide scrollbar for Chrome/Safari */
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.hide-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Safe area padding for bottom tab bar */
+.pb-safe {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}

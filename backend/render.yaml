@@ -1,0 +1,22 @@
+services:
+  - type: web
+    name: ai-health-diet
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port 10000
+    plan: free
+    envVars:
+      - key: DATABASE_URL
+        value: sqlite:///./fitness.db
+      - key: SECRET_KEY
+        generateValue: true
+      - key: JWT_SECRET
+        generateValue: true
+      - key: JWT_ALGORITHM
+        value: HS256
+      - key: ACCESS_TOKEN_EXPIRE_MINUTES
+        value: "10080"
+      - key: CORS_ORIGINS
+        value: "*"
+      - key: DEEPSEEK_API_KEY
+        sync: false
