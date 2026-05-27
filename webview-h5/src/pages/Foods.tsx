@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { searchFoods, createCustomFood } from '../services/api'
+import { searchFoods, createCustomFood, getFavoriteFoods, addFavoriteFood, removeFavoriteFood } from '../services/api'
 import { useToast } from '../components/Toast'
 import type { Food } from '../types'
 
@@ -11,6 +11,7 @@ const CATEGORIES = [
   { key: 'fruit', label: '水果', icon: '🍎' },
   { key: 'fat', label: '脂肪', icon: '🥑' },
   { key: 'beverage', label: '饮品', icon: '🥤' },
+  { key: 'favorites', label: '我的收藏', icon: '❤️' },
 ]
 
 export default function Foods() {
@@ -23,21 +24,65 @@ export default function Foods() {
   const [loading, setLoading] = useState(false)
   const [selectedFood, setSelectedFood] = useState<Food | null>(null)
   const [showCustom, setShowCustom] = useState(false)
+  const [favoriteIds, setFavoriteIds] = useState<Set<number>>(new Set())
+  const [favoriteFoods, setFavoriteFoods] = useState<Food[]>([])
+  const [showFavorites, setShowFavorites] = useState(false)
 
   const limit = 12
+
+  const fetchFavorites = useCallback(async () => {
+    try {
+      const res = await getFavoriteFoods()
+      setFavoriteFoods(res.data.foods || [])
+      setFavoriteIds(new Set((res.data.foods || []).map((f: Food) => f.id)))
+    } catch { /* ignore */ }
+  }, [])
 
   const fetchFoods = useCallback(async (p: number = 1) => {
     setLoading(true)
     try {
       const res = await searchFoods({ q: query || undefined, category: category || undefined, page: p, limit })
-      setFoods(res.data.foods)
+      const list: Food[] = res.data.foods
+      setFoods(list.map(f => ({ ...f, is_favorited: favoriteIds.has(f.id) })))
       setTotal(res.data.total)
       setPage(p)
     } catch { toast('加载失败', 'error') }
     setLoading(false)
-  }, [query, category])
+  }, [query, category, favoriteIds])
 
-  useEffect(() => { fetchFoods(1) }, [fetchFoods])
+  useEffect(() => { fetchFavorites() }, [])
+  useEffect(() => {
+    if (showFavorites) {
+      setFoods(favoriteFoods.map(f => ({ ...f, is_favorited: true })))
+      setTotal(favoriteFoods.length)
+    } else {
+      fetchFoods(1)
+    }
+  }, [showFavorites, favoriteFoods])
+
+  useEffect(() => { if (!showFavorites) fetchFoods(1) }, [fetchFoods, showFavorites])
+
+  const handleToggleFavorite = async (food: Food) => {
+    try {
+      if (favoriteIds.has(food.id)) {
+        await removeFavoriteFood(food.id)
+        setFavoriteIds(prev => { const next = new Set(prev); next.delete(food.id); return next })
+        setFavoriteFoods(prev => prev.filter(f => f.id !== food.id))
+        toast('已取消收藏', 'success')
+      } else {
+        await addFavoriteFood(food.id)
+        setFavoriteIds(prev => new Set(prev).add(food.id))
+        if (!favoriteFoods.find(f => f.id === food.id)) {
+          setFavoriteFoods(prev => [...prev, { ...food, is_favorited: true }])
+        }
+        toast('已收藏', 'success')
+      }
+      setFoods(prev => prev.map(f => f.id === food.id ? { ...f, is_favorited: !favoriteIds.has(food.id) } : f))
+      if (selectedFood?.id === food.id) {
+        setSelectedFood({ ...selectedFood, is_favorited: !favoriteIds.has(food.id) })
+      }
+    } catch { toast('操作失败', 'error') }
+  }
 
   const totalPages = Math.ceil(total / limit)
 
@@ -59,9 +104,19 @@ export default function Foods() {
           {CATEGORIES.map((cat) => (
             <button
               key={cat.key}
-              onClick={() => setCategory(cat.key)}
+              onClick={() => {
+                if (cat.key === 'favorites') {
+                  setShowFavorites(!showFavorites)
+                  setCategory('')
+                } else {
+                  setShowFavorites(false)
+                  setCategory(cat.key)
+                }
+              }}
               className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
-                category === cat.key ? 'bg-primary-600 text-white' : 'bg-gray-100 text-gray-600 active:bg-gray-200'
+                cat.key === 'favorites'
+                  ? showFavorites ? 'bg-red-500 text-white' : 'bg-red-50 text-red-500 active:bg-red-100'
+                  : category === cat.key ? 'bg-primary-600 text-white' : 'bg-gray-100 text-gray-600 active:bg-gray-200'
               }`}
             >
               {cat.icon} {cat.label}
@@ -78,13 +133,21 @@ export default function Foods() {
           <div className="space-y-2">
             {foods.map((food) => (
               <div key={food.id} onClick={() => setSelectedFood(food)}
-                className="bg-white rounded-xl shadow-sm p-3 active:bg-gray-50 transition-colors">
+                className="bg-white rounded-xl shadow-sm p-3 active:bg-gray-50 transition-colors relative">
                 <div className="flex items-center justify-between mb-2">
                   <div>
                     <p className="font-semibold text-gray-800 text-sm">{food.name}</p>
                     <span className="text-xs text-gray-400">{CATEGORIES.find(c => c.key === food.category)?.label || food.category}</span>
                   </div>
-                  <span className="text-lg font-bold text-primary-600">{food.calories}<span className="text-xs text-gray-400 font-normal">/100g</span></span>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={(e) => { e.stopPropagation(); handleToggleFavorite(food) }}
+                      className={`text-lg p-1 ${food.is_favorited ? 'text-red-500' : 'text-gray-300'} active:scale-125 transition-transform`}
+                    >
+                      {food.is_favorited ? '❤️' : '🤍'}
+                    </button>
+                    <span className="text-lg font-bold text-primary-600">{food.calories}<span className="text-xs text-gray-400 font-normal">/100g</span></span>
+                  </div>
                 </div>
                 <div className="grid grid-cols-4 gap-1 text-center text-[10px]">
                   <div className="bg-green-50 rounded p-1"><span className="text-green-700 font-medium">{food.protein}g</span> <span className="text-green-500">蛋白</span></div>
@@ -98,7 +161,7 @@ export default function Foods() {
 
           {foods.length === 0 && <div className="text-center py-16 text-gray-400"><div className="text-4xl mb-3">🍽️</div><p className="text-sm">未找到匹配的食物</p></div>}
 
-          {totalPages > 1 && (
+          {!showFavorites && totalPages > 1 && (
             <div className="flex justify-center gap-2 mt-4">
               <button onClick={() => fetchFoods(page - 1)} disabled={page <= 1} className="px-4 py-2 text-sm border rounded-lg disabled:opacity-30">上一页</button>
               <span className="px-3 py-2 text-sm text-gray-500">{page}/{totalPages}</span>
@@ -111,7 +174,7 @@ export default function Foods() {
       )}
 
       {/* Food Detail */}
-      {selectedFood && <FoodDetailModal food={selectedFood} onClose={() => setSelectedFood(null)} />}
+      {selectedFood && <FoodDetailModal food={selectedFood} onClose={() => setSelectedFood(null)} onToggleFavorite={handleToggleFavorite} />}
 
       {/* Custom Food Modal */}
       {showCustom && <CustomFoodModal onClose={() => setShowCustom(false)} onAdded={() => fetchFoods(1)} />}
@@ -119,7 +182,7 @@ export default function Foods() {
   )
 }
 
-function FoodDetailModal({ food, onClose }: { food: Food; onClose: () => void }) {
+function FoodDetailModal({ food, onClose, onToggleFavorite }: { food: Food; onClose: () => void; onToggleFavorite: (food: Food) => void }) {
   const macros = [
     { label: '蛋白质', value: food.protein, color: 'text-green-600', bg: 'bg-green-50' },
     { label: '碳水', value: food.carbs, color: 'text-blue-600', bg: 'bg-blue-50' },
@@ -134,7 +197,12 @@ function FoodDetailModal({ food, onClose }: { food: Food; onClose: () => void })
       <div className="bg-white rounded-2xl w-full max-w-sm p-5" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-3">
           <h3 className="text-lg font-bold text-gray-800">{food.name}</h3>
-          <button onClick={onClose} className="text-gray-400 text-xl p-1">✕</button>
+          <div className="flex items-center gap-2">
+            <button onClick={() => onToggleFavorite(food)} className={`text-xl p-1 ${food.is_favorited ? 'text-red-500' : 'text-gray-300'}`}>
+              {food.is_favorited ? '❤️' : '🤍'}
+            </button>
+            <button onClick={onClose} className="text-gray-400 text-xl p-1">✕</button>
+          </div>
         </div>
         <p className="text-xs text-gray-500 mb-3">{CATEGORIES.find(c => c.key === food.category)?.label || food.category} {food.is_custom && '· 自定义'}</p>
         <div className="text-center mb-4">
@@ -181,7 +249,7 @@ function CustomFoodModal({ onClose, onAdded }: { onClose: () => void; onAdded: (
         <div className="space-y-3">
           <input type="text" value={custom.name} onChange={(e) => setCustom({ ...custom, name: e.target.value })} placeholder="食物名称 *" className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" />
           <select value={custom.category} onChange={(e) => setCustom({ ...custom, category: e.target.value })} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm">
-            {CATEGORIES.filter(c => c.key).map(c => <option key={c.key} value={c.key}>{c.label}</option>)}
+            {CATEGORIES.filter(c => c.key && c.key !== 'favorites').map(c => <option key={c.key} value={c.key}>{c.label}</option>)}
           </select>
           <div className="grid grid-cols-2 gap-2">
             <div><label className="text-xs text-gray-500">热量 (kcal/100g) *</label><input type="number" value={custom.calories || ''} onChange={(e) => setCustom({ ...custom, calories: Number(e.target.value) })} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm mt-0.5" /></div>

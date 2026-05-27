@@ -1,8 +1,17 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
-import { sendChatMessage, getChatHistory, clearChatHistory, analyzeFoodImage } from '../services/api'
-import type { ChatMessage } from '../types'
+import { sendChatMessage, getChatHistory, clearChatHistory, analyzeFoodImage, addFoodEntryFromImage } from '../services/api'
+import { useToast } from '../components/Toast'
+import type { ChatMessage, FoodImageAnalysis } from '../types'
+
+const MEAL_TYPES = [
+  { key: 'breakfast', label: '早餐', icon: '🌅' },
+  { key: 'lunch', label: '午餐', icon: '☀️' },
+  { key: 'dinner', label: '晚餐', icon: '🌙' },
+  { key: 'snack', label: '加餐', icon: '🍪' },
+]
 
 export default function Chat() {
+  const { show: toast } = useToast()
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [input, setInput] = useState('')
   const [sending, setSending] = useState(false)
@@ -12,6 +21,13 @@ export default function Chat() {
   const [imagePreview, setImagePreview] = useState<string | null>(null)
   const bottomRef = useRef<HTMLDivElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+
+  // Record to diary state
+  const [showRecordModal, setShowRecordModal] = useState(false)
+  const [recordData, setRecordData] = useState<FoodImageAnalysis | null>(null)
+  const [recordMealType, setRecordMealType] = useState('lunch')
+  const [recordQuantity, setRecordQuantity] = useState(100)
+  const [recording, setRecording] = useState(false)
 
   useEffect(() => {
     getChatHistory(50).then(res => setMessages(res.data.messages || [])).catch(() => {}).finally(() => setLoadingHistory(false))
@@ -95,6 +111,35 @@ export default function Chat() {
     try { await clearChatHistory(); setMessages([]) } catch {}
   }
 
+  const handleRecordToDiary = (fa: FoodImageAnalysis) => {
+    setRecordData(fa)
+    setRecordMealType('lunch')
+    setRecordQuantity(fa.estimated_quantity || 100)
+    setShowRecordModal(true)
+  }
+
+  const confirmRecord = async () => {
+    if (!recordData || recording) return
+    setRecording(true)
+    try {
+      const today = new Date().toISOString().slice(0, 10)
+      await addFoodEntryFromImage({
+        food_name: recordData.food_name,
+        food_category: recordData.food_category || recordData.category || 'staple',
+        calories_per_100g: recordData.calories_per_100g,
+        protein: recordData.protein || 0,
+        carbs: recordData.carbs || 0,
+        fat: recordData.fat || 0,
+        entry_date: today,
+        meal_type: recordMealType,
+        quantity: recordQuantity,
+      })
+      toast('已记录到饮食日记', 'success')
+      setShowRecordModal(false)
+    } catch { toast('记录失败', 'error') }
+    setRecording(false)
+  }
+
   const suggestedQuestions = [
     { icon: '🥗', text: '根据我的目标，今天应该吃多少卡路里？' },
     { icon: '📊', text: '帮我分析一下最近的饮食情况' },
@@ -130,17 +175,31 @@ export default function Chat() {
           </div>
         ) : (
           messages.map(msg => (
-            <div key={msg.id} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-              {msg.role === 'assistant' && (
-                <div className="w-7 h-7 rounded-full bg-gradient-to-br from-primary-400 to-primary-600 flex items-center justify-center text-white text-xs font-bold mr-2 flex-shrink-0 mt-1">AI</div>
-              )}
-              <div className={`max-w-[80%] px-3.5 py-2.5 rounded-2xl text-sm leading-relaxed whitespace-pre-wrap ${
-                msg.role === 'user' ? 'bg-primary-600 text-white rounded-br-md' : 'bg-white text-gray-800 rounded-bl-md border border-gray-100 shadow-sm'
-              }`}>
-                {msg.content}
+            <div key={msg.id}>
+              <div className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                {msg.role === 'assistant' && (
+                  <div className="w-7 h-7 rounded-full bg-gradient-to-br from-primary-400 to-primary-600 flex items-center justify-center text-white text-xs font-bold mr-2 flex-shrink-0 mt-1">AI</div>
+                )}
+                <div className={`max-w-[80%] px-3.5 py-2.5 rounded-2xl text-sm leading-relaxed whitespace-pre-wrap ${
+                  msg.role === 'user' ? 'bg-primary-600 text-white rounded-br-md' : 'bg-white text-gray-800 rounded-bl-md border border-gray-100 shadow-sm'
+                }`}>
+                  {msg.content}
+                </div>
+                {msg.role === 'user' && (
+                  <div className="w-7 h-7 rounded-full bg-gray-300 flex items-center justify-center text-white text-xs font-bold ml-2 flex-shrink-0 mt-1">U</div>
+                )}
               </div>
-              {msg.role === 'user' && (
-                <div className="w-7 h-7 rounded-full bg-gray-300 flex items-center justify-center text-white text-xs font-bold ml-2 flex-shrink-0 mt-1">U</div>
+              {/* Record to diary button for assistant messages with food_analysis */}
+              {msg.role === 'assistant' && msg.food_analysis && (
+                <div className="flex justify-start mt-1.5">
+                  <div className="w-7 mr-2 flex-shrink-0" />
+                  <button
+                    onClick={() => handleRecordToDiary(msg.food_analysis!)}
+                    className="px-3 py-1.5 bg-green-50 border border-green-200 text-green-700 text-xs rounded-full font-medium active:bg-green-100 transition-colors"
+                  >
+                    📝 记录到饮食日记
+                  </button>
+                </div>
               )}
             </div>
           ))
@@ -194,6 +253,56 @@ export default function Chat() {
           {sending ? '...' : imageFile ? '分析' : '发送'}
         </button>
       </div>
+
+      {/* Record to Diary Modal */}
+      {showRecordModal && recordData && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setShowRecordModal(false)}>
+          <div className="bg-white rounded-2xl w-full max-w-sm p-5" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-gray-800">记录到饮食日记</h3>
+              <button onClick={() => setShowRecordModal(false)} className="text-gray-400 text-xl p-1">✕</button>
+            </div>
+
+            <div className="bg-gray-50 rounded-xl p-3 mb-4">
+              <div className="flex justify-between items-center">
+                <div>
+                  <p className="font-semibold text-gray-800">{recordData.food_name}</p>
+                  <p className="text-xs text-gray-500">{recordData.food_category || recordData.category}</p>
+                </div>
+                <span className="text-lg font-bold text-primary-600">{recordData.calories_per_100g}<span className="text-xs text-gray-400 font-normal"> kcal/100g</span></span>
+              </div>
+              <div className="flex gap-3 mt-2 text-[11px]">
+                <span className="text-green-600">蛋白 {recordData.protein || 0}g</span>
+                <span className="text-blue-600">碳水 {recordData.carbs || 0}g</span>
+                <span className="text-yellow-600">脂肪 {recordData.fat || 0}g</span>
+              </div>
+            </div>
+
+            {/* Meal type */}
+            <label className="text-xs text-gray-500 mb-1.5 block">餐次</label>
+            <div className="grid grid-cols-4 gap-1.5 mb-3">
+              {MEAL_TYPES.map(mt => (
+                <button key={mt.key} onClick={() => setRecordMealType(mt.key)}
+                  className={`py-2 rounded-lg text-xs font-medium transition-colors ${
+                    recordMealType === mt.key ? 'bg-primary-600 text-white' : 'bg-gray-100 text-gray-600 active:bg-gray-200'
+                  }`}>
+                  {mt.icon} {mt.label}
+                </button>
+              ))}
+            </div>
+
+            {/* Quantity */}
+            <label className="text-xs text-gray-500 mb-1.5 block">份量 (g)</label>
+            <input type="number" value={recordQuantity} onChange={(e) => setRecordQuantity(Number(e.target.value))}
+              className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm mb-4 focus:ring-2 focus:ring-primary-500 outline-none" />
+
+            <button onClick={confirmRecord} disabled={recording}
+              className="w-full bg-green-600 text-white py-2.5 rounded-lg text-sm font-medium active:bg-green-700 disabled:opacity-50">
+              {recording ? '记录中...' : '✅ 确认记录'}
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

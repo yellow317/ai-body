@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { getDailyEntries, addFoodEntry, deleteFoodEntry, searchFoods, createCustomFood } from '../services/api'
+import { getDailyEntries, addFoodEntry, deleteFoodEntry, searchFoods, createCustomFood, getFavoriteFoods } from '../services/api'
 import { useToast } from '../components/Toast'
 import type { DailySummary, FoodEntry, Food } from '../types'
 
@@ -135,6 +135,7 @@ function AddButton({ mealType, date, onAdded }: { mealType: string; date: string
   const [quantity, setQuantity] = useState<Record<number, number>>({})
   const [adding, setAdding] = useState(false)
   const [custom, setCustom] = useState({ name: '', category: 'staple', calories: 0, protein: 0, carbs: 0, fat: 0, serving_size: 100 })
+  const [favorites, setFavorites] = useState<Food[]>([])
 
   const doSearch = useCallback(async (p: number = 1) => {
     try {
@@ -145,7 +146,14 @@ function AddButton({ mealType, date, onAdded }: { mealType: string; date: string
     } catch { toast('搜索失败', 'error') }
   }, [query, category])
 
-  useEffect(() => { if (open) doSearch() }, [doSearch, open])
+  useEffect(() => {
+    if (open) {
+      doSearch()
+      getFavoriteFoods().then(res => setFavorites(res.data.foods || [])).catch(() => {})
+    }
+  }, [doSearch, open])
+
+  const showFavorites = !query && !category && favorites.length > 0
 
   const handleAdd = async (foodId: number) => {
     const qty = quantity[foodId] || 100
@@ -200,6 +208,22 @@ function AddButton({ mealType, date, onAdded }: { mealType: string; date: string
                       {CATEGORIES.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
                     </select>
                   </div>
+
+                  {/* Favorites quick-add */}
+                  {showFavorites && (
+                    <div className="mb-3">
+                      <p className="text-xs text-gray-500 mb-1.5">❤️ 我的收藏</p>
+                      <div className="flex flex-wrap gap-1.5">
+                        {favorites.slice(0, 5).map(food => (
+                          <button key={food.id} onClick={() => handleAdd(food.id)} disabled={adding}
+                            className="px-3 py-1.5 bg-red-50 border border-red-200 text-red-600 text-xs rounded-full font-medium active:bg-red-100 transition-colors">
+                            {food.name} · {food.calories}kcal
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
                   <div className="space-y-2 max-h-64 overflow-y-auto">
                     {foods.map(food => (
                       <div key={food.id} className="flex items-center justify-between border rounded-lg p-3">

@@ -6,7 +6,7 @@ import { useToast } from '../components/Toast'
 import type { DailySummary, Food, DailyStats } from '../types'
 
 export default function Dashboard() {
-  const { user } = useAuth()
+  const { user, profile } = useAuth()
   const { show: toast } = useToast()
   const today = new Date().toISOString().split('T')[0]
   const [summary, setSummary] = useState<DailySummary | null>(null)
@@ -40,7 +40,7 @@ export default function Dashboard() {
   }, [fetchData])
 
   const total = summary?.total || { calories: 0, protein: 0, carbs: 0, fat: 0 }
-  const targetCal = 2000
+  const targetCal = profile?.target_calories || 2000
 
   return (
     <div className="max-w-lg mx-auto px-4 pb-24">
@@ -60,12 +60,36 @@ export default function Dashboard() {
         </div>
       ) : (
         <div className="space-y-4">
+          {/* Profile Quick Stats */}
+          {profile && (
+            <div className="grid grid-cols-3 gap-2 text-center">
+              <div className="bg-white rounded-xl shadow-sm p-3">
+                <p className="text-[10px] text-gray-500">BMI</p>
+                <p className="text-sm font-bold text-gray-800">{profile.bmi?.toFixed(1) || '-'}</p>
+              </div>
+              <div className="bg-white rounded-xl shadow-sm p-3">
+                <p className="text-[10px] text-gray-500">目标热量</p>
+                <p className="text-sm font-bold text-primary-600">{profile.target_calories || '-'}</p>
+              </div>
+              <div className="bg-white rounded-xl shadow-sm p-3">
+                <p className="text-[10px] text-gray-500">目标</p>
+                <p className="text-sm font-bold text-gray-800">{profile.goal === 'lose' ? '减脂' : profile.goal === 'gain' ? '增肌' : '保持'}</p>
+              </div>
+            </div>
+          )}
+
           {/* Stats Cards */}
           <div className="grid grid-cols-2 gap-3">
             <StatCard label="今日摄入" value={total.calories} unit="kcal" target={targetCal} color="text-orange-600" bg="bg-orange-50" />
             <StatCard label="蛋白质" value={total.protein} unit="g" target={60} color="text-red-600" bg="bg-red-50" />
             <StatCard label="碳水" value={total.carbs} unit="g" target={225} color="text-blue-600" bg="bg-blue-50" />
             <StatCard label="脂肪" value={total.fat} unit="g" target={55} color="text-yellow-600" bg="bg-yellow-50" />
+          </div>
+
+          {/* Macro Breakdown */}
+          <div className="bg-white rounded-xl shadow-sm p-5">
+            <h3 className="text-sm font-semibold text-gray-600 mb-3">宏量营养素分布</h3>
+            <MacroPie protein={total.protein} carbs={total.carbs} fat={total.fat} />
           </div>
 
           {/* Calorie Progress */}
@@ -158,6 +182,30 @@ function StatCard({ label, value, unit, target, color, bg }: {
       <div className="w-full bg-gray-200 rounded-full h-1.5 mt-2">
         <div className={`h-1.5 rounded-full ${color.replace('text-', 'bg-')}`} style={{ width: `${pct}%` }} />
       </div>
+    </div>
+  )
+}
+
+function MacroPie({ protein, carbs, fat }: { protein: number; carbs: number; fat: number }) {
+  const totalG = protein + carbs + fat || 1
+  const items = [
+    { label: '蛋白质', value: protein, pct: (protein / totalG) * 100, color: 'bg-green-500' },
+    { label: '碳水', value: carbs, pct: (carbs / totalG) * 100, color: 'bg-blue-500' },
+    { label: '脂肪', value: fat, pct: (fat / totalG) * 100, color: 'bg-yellow-500' },
+  ]
+  return (
+    <div className="space-y-3">
+      {items.map(item => (
+        <div key={item.label}>
+          <div className="flex justify-between text-xs mb-1">
+            <span className="text-gray-600">{item.label}</span>
+            <span className="text-gray-800 font-medium">{item.value}g ({item.pct.toFixed(0)}%)</span>
+          </div>
+          <div className="w-full bg-gray-100 rounded-full h-3">
+            <div className={`h-3 rounded-full ${item.color} transition-all duration-500`} style={{ width: `${Math.min(item.pct, 100)}%` }} />
+          </div>
+        </div>
+      ))}
     </div>
   )
 }

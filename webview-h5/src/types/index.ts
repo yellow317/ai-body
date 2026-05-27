@@ -2,10 +2,13 @@ export interface User {
   id: number
   email: string
   username: string
+  is_active?: boolean
   created_at: string
 }
 
 export interface UserProfile {
+  id?: number
+  user_id?: number
   height?: number
   weight?: number
   age?: number
@@ -31,6 +34,8 @@ export interface Food {
   sugar: number
   serving_size: number
   is_custom?: boolean
+  created_by?: number | null
+  is_favorited?: boolean
 }
 
 export interface FoodEntry {
@@ -74,9 +79,39 @@ export interface CalculationResult {
   fat_target: number
 }
 
+export interface FoodImageAnalysis {
+  food_name: string
+  food_category: string
+  calories_per_100g: number
+  protein: number
+  carbs: number
+  fat: number
+  estimated_quantity: number
+  category: string
+}
+
 export interface ChatMessage {
   id: number
   role: 'user' | 'assistant'
   content: string
+  food_analysis?: FoodImageAnalysis | null
   created_at: string
+}
+
+export interface ChatHistoryResponse {
+  messages: ChatMessage[]
+}
+
+export interface MealPlanItem {
+  food_id: number
+  name: string
+  quantity: number
+  calories: number
+}
+
+export interface MealPlan {
+  breakfast: { items: MealPlanItem[]; total_calories: number }
+  lunch: { items: MealPlanItem[]; total_calories: number }
+  dinner: { items: MealPlanItem[]; total_calories: number }
+  snack: { items: MealPlanItem[]; total_calories: number }
 }

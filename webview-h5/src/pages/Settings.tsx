@@ -19,6 +19,7 @@ function profileToForm(p: UserProfile) {
 const LABELS: Record<string, string> = {
   height: '身高 (cm)', weight: '体重 (kg)', age: '年龄',
   gender: '性别', activity_level: '活动水平', goal: '目标',
+  body_fat: '体脂率', target_calories: '目标热量',
 }
 
 const GENDER_MAP: Record<string, string> = { male: '男', female: '女' }
@@ -88,6 +89,8 @@ export default function Settings() {
         { key: 'gender', value: GENDER_MAP[profile.gender || ''] || '--' },
         { key: 'activity_level', value: ACTIVITY_MAP[profile.activity_level || ''] || '--' },
         { key: 'goal', value: GOAL_MAP[profile.goal || ''] || '--' },
+        { key: 'body_fat', value: profile.body_fat ? `${Number(profile.body_fat).toFixed(1)}%` : '--' },
+        { key: 'target_calories', value: profile.target_calories ? `${profile.target_calories} kcal` : '--' },
       ]
     : []
 
@@ -181,10 +184,13 @@ export default function Settings() {
         {profile && (profile.bmi || profile.bmr || profile.tdee) && (
           <div className="bg-white rounded-xl shadow-sm p-4">
             <h3 className="text-sm font-semibold text-gray-600 mb-3">身体指标</h3>
-            <div className="grid grid-cols-3 gap-3 text-center">
+            <div className="grid grid-cols-2 gap-3 text-center">
               {profile.bmi && <MetricBox label="BMI" value={Number(profile.bmi).toFixed(1)} />}
               {profile.bmr && <MetricBox label="BMR" value={`${Math.round(Number(profile.bmr))} kcal`} />}
               {profile.tdee && <MetricBox label="TDEE" value={`${Math.round(Number(profile.tdee))} kcal`} />}
+              {profile.body_fat && <MetricBox label="体脂率" value={`${Number(profile.body_fat).toFixed(1)}%`} />}
+              {profile.target_calories && <MetricBox label="目标热量" value={`${profile.target_calories} kcal`} />}
+              {profile.goal && <MetricBox label="目标" value={profile.goal === 'lose' ? '减脂' : profile.goal === 'gain' ? '增肌' : '维持'} />}
             </div>
           </div>
         )}

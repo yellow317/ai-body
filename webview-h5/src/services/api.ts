@@ -50,9 +50,31 @@ export const searchFoods = (params: Record<string, string | number | undefined>)
 export const createCustomFood = (data: Record<string, unknown>) =>
   api.post('/foods/custom', data)
 
+// Favorites
+export const getFavoriteFoods = () =>
+  api.get('/foods/favorites')
+
+export const addFavoriteFood = (foodId: number) =>
+  api.post(`/foods/${foodId}/favorite`)
+
+export const removeFavoriteFood = (foodId: number) =>
+  api.delete(`/foods/${foodId}/favorite`)
+
 // Food Entries
 export const addFoodEntry = (data: { food_id: number; date: string; meal_type: string; quantity: number }) =>
   api.post('/food-entries', data)
+
+export const addFoodEntryFromImage = (data: {
+  food_name: string
+  food_category?: string
+  calories_per_100g: number
+  protein?: number
+  carbs?: number
+  fat?: number
+  entry_date: string
+  meal_type?: string
+  quantity?: number
+}) => api.post('/food-entries/from-image', data)
 
 export const getDailyEntries = (date: string) =>
   api.get(`/food-entries/daily/${date}`)

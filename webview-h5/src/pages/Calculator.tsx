@@ -62,13 +62,6 @@ export default function Calculator() {
     setSaving(false)
   }
 
-  const gaugeAngle = useMemo(() => {
-    if (!result) return -90
-    const bmi = result.bmi
-    const clamped = Math.max(10, Math.min(40, bmi))
-    return ((clamped - 10) / 30) * 180 - 90
-  }, [result])
-
   return (
     <div className="max-w-lg mx-auto px-4 pb-24">
       <h1 className="text-xl font-bold text-gray-800 py-3">身体指标计算器</h1>
@@ -77,9 +70,9 @@ export default function Calculator() {
       <div className="bg-white rounded-xl shadow-sm p-4 mb-4">
         <h2 className="text-sm font-semibold text-gray-600 mb-3">输入数据</h2>
         <div className="space-y-3">
-          <RangeField label="身高 (cm)" value={form.height} onChange={handleChange('height')} min={100} max={250} />
-          <RangeField label="体重 (kg)" value={form.weight} onChange={handleChange('weight')} min={30} max={250} />
-          <RangeField label="年龄" value={form.age} onChange={handleChange('age')} min={10} max={100} />
+          <DualField label="身高 (cm)" value={form.height} onChange={(v) => setForm({ ...form, height: v })} min={100} max={250} />
+          <DualField label="体重 (kg)" value={form.weight} onChange={(v) => setForm({ ...form, weight: v })} min={30} max={250} />
+          <DualField label="年龄" value={form.age} onChange={(v) => setForm({ ...form, age: v })} min={10} max={100} />
           <SelectField label="性别" value={form.gender} onChange={handleChange('gender')} options={[{ v: 'male', l: '男' }, { v: 'female', l: '女' }]} />
           <SelectField label="活动水平" value={form.activity_level} onChange={handleChange('activity_level')}
             options={[
@@ -96,6 +89,11 @@ export default function Calculator() {
       {/* Results */}
       {result ? (
         <div className="space-y-3">
+          {/* BMI Gauge */}
+          <div className="bg-white rounded-xl shadow-sm p-4 flex flex-col items-center">
+            <BMIGauge bmi={result.bmi} category={result.bmi_category} />
+          </div>
+
           <div className="bg-white rounded-xl shadow-sm p-4">
             <div className="flex justify-between items-start mb-3">
               <h3 className="text-sm font-semibold text-gray-600">计算结果</h3>
@@ -116,13 +114,13 @@ export default function Calculator() {
             </div>
           </div>
 
-          {/* Macro targets */}
+          {/* Macro targets with bars */}
           <div className="bg-white rounded-xl shadow-sm p-4">
             <h3 className="text-sm font-semibold text-gray-600 mb-3">营养素目标 (克/天)</h3>
-            <div className="grid grid-cols-3 gap-3">
-              <div className="text-center"><p className="text-xl font-bold text-green-600">{result.protein_target}g</p><p className="text-xs text-gray-500">蛋白质 (30%)</p></div>
-              <div className="text-center"><p className="text-xl font-bold text-blue-600">{result.carbs_target}g</p><p className="text-xs text-gray-500">碳水 (45%)</p></div>
-              <div className="text-center"><p className="text-xl font-bold text-yellow-600">{result.fat_target}g</p><p className="text-xs text-gray-500">脂肪 (25%)</p></div>
+            <div className="space-y-3">
+              <MacroBar label="蛋白质" value={result.protein_target} pct={30} color="bg-green-500" />
+              <MacroBar label="碳水" value={result.carbs_target} pct={45} color="bg-blue-500" />
+              <MacroBar label="脂肪" value={result.fat_target} pct={25} color="bg-yellow-500" />
             </div>
           </div>
         </div>
@@ -136,13 +134,31 @@ export default function Calculator() {
   )
 }
 
-function RangeField({ label, value, onChange, min, max }: {
-  label: string; value: number; onChange: (e: React.ChangeEvent<HTMLInputElement>) => void; min: number; max: number
+function DualField({ label, value, onChange, min, max }: {
+  label: string; value: number; onChange: (v: number) => void; min: number; max: number
 }) {
   return (
     <div>
-      <div className="flex justify-between text-sm mb-1"><span className="text-gray-600">{label}</span><span className="font-semibold text-gray-800">{value}</span></div>
-      <input type="range" min={min} max={max} value={value} onChange={onChange} className="w-full accent-primary-600" />
+      <div className="flex justify-between text-sm mb-1"><span className="text-gray-600">{label}</span></div>
+      <div className="flex items-center gap-3">
+        <input type="range" min={min} max={max} value={value} onChange={(e) => onChange(Number(e.target.value))} className="flex-1 accent-primary-600" />
+        <input type="number" value={value} onChange={(e) => onChange(Math.max(min, Math.min(max, Number(e.target.value) || min)))}
+          className="w-16 px-2 py-1 border border-gray-200 rounded-lg text-sm text-center font-semibold text-gray-800" />
+      </div>
+    </div>
+  )
+}
+
+function MacroBar({ label, value, pct, color }: { label: string; value: number; pct: number; color: string }) {
+  return (
+    <div>
+      <div className="flex justify-between text-xs mb-1">
+        <span className="text-gray-600">{label} ({pct}%)</span>
+        <span className="font-semibold text-gray-800">{value}g</span>
+      </div>
+      <div className="w-full bg-gray-100 rounded-full h-3">
+        <div className={`h-3 rounded-full ${color}`} style={{ width: `${pct}%` }} />
+      </div>
     </div>
   )
 }
@@ -156,6 +172,47 @@ function SelectField({ label, value, onChange, options }: {
       <select value={value} onChange={onChange} className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-primary-500">
         {options.map(o => <option key={o.v} value={o.v}>{o.l}</option>)}
       </select>
+    </div>
+  )
+}
+
+function BMIGauge({ bmi, category }: { bmi: number; category: string }) {
+  const bmiRanges = [
+    { max: 18.5, label: '偏瘦', color: '#3b82f6' },
+    { max: 24, label: '正常', color: '#22c55e' },
+    { max: 28, label: '超重', color: '#eab308' },
+    { max: 40, label: '肥胖', color: '#ef4444' },
+  ]
+  const clamped = Math.max(10, Math.min(40, bmi))
+  const angle = ((clamped - 10) / 30) * 180
+  const needleRad = (angle - 90) * (Math.PI / 180)
+  const cx = 80; const cy = 70; const r = 60
+  const nx = cx + Math.cos(needleRad) * r * 0.7
+  const ny = cy + Math.sin(needleRad) * r * 0.7
+
+  return (
+    <div className="text-center">
+      <svg viewBox="0 0 160 120" className="w-56 h-40">
+        {/* Colored arcs */}
+        {bmiRanges.map((range, i) => {
+          const startAngle = ((i === 0 ? 0 : bmiRanges[i-1].max - 10) / 30) * 180
+          const endAngle = ((range.max - 10) / 30) * 180
+          const startRad = (startAngle - 90) * (Math.PI / 180)
+          const endRad = (endAngle - 90) * (Math.PI / 180)
+          const x1 = cx + Math.cos(startRad) * r; const y1 = cy + Math.sin(startRad) * r
+          const x2 = cx + Math.cos(endRad) * r; const y2 = cy + Math.sin(endRad) * r
+          const largeArc = (endAngle - startAngle) > 90 ? 1 : 0
+          return (
+            <path key={i} d={`M ${x1} ${y1} A ${r} ${r} 0 ${largeArc} 1 ${x2} ${y2}`}
+              stroke={range.color} strokeWidth="14" fill="none" strokeLinecap="butt" />
+          )
+        })}
+        {/* Needle */}
+        <line x1={cx} y1={cy} x2={nx} y2={ny} stroke="#1e293b" strokeWidth="2" strokeLinecap="round" />
+        <circle cx={cx} cy={cy} r="4" fill="#1e293b" />
+      </svg>
+      <p className="text-xl font-bold text-gray-800">{bmi}</p>
+      <p className="text-sm text-gray-500">{category}</p>
     </div>
   )
 }
