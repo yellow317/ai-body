@@ -95,7 +95,7 @@ export default function Settings() {
     : []
 
   return (
-    <div className="max-w-lg mx-auto px-4 pb-24">
+    <div className="max-w-lg lg:max-w-4xl xl:max-w-6xl mx-auto px-4 lg:px-6 pb-24">
       <h1 className="text-xl font-bold text-gray-800 py-3">设置</h1>
 
       <div className="space-y-3">
@@ -120,7 +120,7 @@ export default function Settings() {
 
           {showForm ? (
             <div className="space-y-3">
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
                 <div>
                   <label className="text-xs text-gray-500">身高 (cm)</label>
                   <input type="number" value={form.height} onChange={handleChange('height')} placeholder="170"
@@ -184,7 +184,7 @@ export default function Settings() {
         {profile && (profile.bmi || profile.bmr || profile.tdee) && (
           <div className="bg-white rounded-xl shadow-sm p-4">
             <h3 className="text-sm font-semibold text-gray-600 mb-3">身体指标</h3>
-            <div className="grid grid-cols-2 gap-3 text-center">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 text-center">
               {profile.bmi && <MetricBox label="BMI" value={Number(profile.bmi).toFixed(1)} />}
               {profile.bmr && <MetricBox label="BMR" value={`${Math.round(Number(profile.bmr))} kcal`} />}
               {profile.tdee && <MetricBox label="TDEE" value={`${Math.round(Number(profile.tdee))} kcal`} />}

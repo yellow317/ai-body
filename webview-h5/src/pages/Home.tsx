@@ -5,7 +5,7 @@ export default function Home() {
   const { user } = useAuth()
 
   return (
-    <div className="max-w-lg mx-auto text-center px-4 pt-8 pb-20">
+    <div className="max-w-lg lg:max-w-2xl xl:max-w-3xl mx-auto text-center px-4 pt-8 pb-20">
       <div className="mb-8">
         <div className="w-20 h-20 bg-gradient-to-br from-primary-400 to-primary-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
           <span className="text-4xl text-white font-bold">AI</span>
@@ -14,7 +14,7 @@ export default function Home() {
         <p className="text-gray-500 text-sm">智能追踪身体数据，科学管理饮食，达成理想健康</p>
       </div>
 
-      <div className="grid grid-cols-3 gap-3 mb-8">
+      <div className="grid grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-3 mb-8">
         <FeatureCard icon="🧮" title="指标计算" desc="BMI/BMR/TDEE" />
         <FeatureCard icon="📝" title="饮食记录" desc="营养摄入追踪" />
         <FeatureCard icon="🤖" title="AI推荐" desc="智能饮食计划" />

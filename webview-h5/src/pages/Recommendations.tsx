@@ -69,7 +69,7 @@ export default function Recommendations() {
   }
 
   return (
-    <div className="max-w-lg mx-auto px-4 pb-24">
+    <div className="max-w-lg lg:max-w-4xl xl:max-w-6xl mx-auto px-4 lg:px-6 pb-24">
       <div className="flex items-center justify-between py-3">
         <h1 className="text-xl font-bold text-gray-800">AI 推荐</h1>
         <button onClick={fetchMealPlan}

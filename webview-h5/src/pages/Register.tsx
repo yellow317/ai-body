@@ -36,7 +36,7 @@ export default function Register() {
   }
 
   return (
-    <div className="max-w-lg mx-auto px-4 pt-4 pb-20">
+    <div className="max-w-lg lg:max-w-xl xl:max-w-2xl mx-auto px-4 pt-4 pb-20">
       <div className="text-center mb-6">
         <h1 className="text-2xl font-bold text-gray-800">创建账号</h1>
         <p className="text-gray-500 text-sm mt-1">开始你的健康饮食之旅</p>

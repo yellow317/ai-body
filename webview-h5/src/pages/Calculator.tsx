@@ -63,7 +63,7 @@ export default function Calculator() {
   }
 
   return (
-    <div className="max-w-lg mx-auto px-4 pb-24">
+    <div className="max-w-lg lg:max-w-4xl xl:max-w-6xl mx-auto px-4 lg:px-6 pb-24">
       <h1 className="text-xl font-bold text-gray-800 py-3">身体指标计算器</h1>
 
       {/* Form */}
@@ -104,7 +104,7 @@ export default function Calculator() {
                 {saved ? '✓ 已保存' : saving ? '保存中...' : '保存到资料'}
               </button>
             </div>
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-2 lg:grid-cols-3 gap-2">
               <ResultCard label="BMI" value={result.bmi} sub={result.bmi_category} />
               <ResultCard label="体脂率" value={result.body_fat} unit="%" />
               <ResultCard label="BMR" value={result.bmr} unit="kcal/天" sub="基础代谢" />

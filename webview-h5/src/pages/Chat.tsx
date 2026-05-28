@@ -150,7 +150,7 @@ export default function Chat() {
   ]
 
   return (
-    <div className="max-w-lg mx-auto h-[calc(100vh-7rem)] flex flex-col px-4">
+    <div className="max-w-lg lg:max-w-4xl xl:max-w-6xl mx-auto h-[calc(100vh-7rem)] flex flex-col px-4 lg:px-6">
       <div className="flex items-center justify-between py-3 flex-shrink-0">
         <div><h1 className="text-xl font-bold text-gray-800">AI 助手</h1><p className="text-gray-500 text-xs">智能健身与饮食顾问</p></div>
         {messages.length > 0 && <button onClick={handleClear} className="text-xs text-gray-400 active:text-red-500">清空</button>}
@@ -164,7 +164,7 @@ export default function Chat() {
             <div className="text-5xl mb-3">💬</div>
             <h2 className="text-base font-semibold text-gray-700 mb-1">你好，我是你的AI健身教练</h2>
             <p className="text-xs text-gray-500 mb-4">向我提问关于饮食、运动、营养的问题</p>
-            <div className="grid grid-cols-1 gap-1.5">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-1.5">
               {suggestedQuestions.map(q => (
                 <button key={q.text} onClick={() => setInput(q.text)}
                   className="flex items-center space-x-2 bg-white border border-gray-100 rounded-lg px-3 py-2.5 text-left text-xs text-gray-700 active:bg-primary-50 active:border-primary-200">

@@ -62,7 +62,7 @@ export default function Diary() {
   }
 
   return (
-    <div className="max-w-lg mx-auto px-4 pb-24">
+    <div className="max-w-lg lg:max-w-4xl xl:max-w-6xl mx-auto px-4 lg:px-6 pb-24">
       {/* Date picker */}
       <div className="flex items-center justify-between py-3">
         <button onClick={() => changeDate(-1)} className="p-2 text-gray-500 active:text-primary-600 text-lg">◀</button>

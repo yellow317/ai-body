@@ -87,7 +87,7 @@ export default function Foods() {
   const totalPages = Math.ceil(total / limit)
 
   return (
-    <div className="max-w-lg mx-auto px-4 pb-24">
+    <div className="max-w-lg lg:max-w-4xl xl:max-w-6xl mx-auto px-4 lg:px-6 pb-24">
       <div className="flex items-center justify-between py-3">
         <h1 className="text-xl font-bold text-gray-800">食物库</h1>
         <button onClick={() => setShowCustom(true)} className="bg-primary-600 text-white px-3 py-1.5 rounded-lg text-sm font-medium active:bg-primary-700">+ 自定义</button>

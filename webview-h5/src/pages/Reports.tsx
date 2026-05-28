@@ -52,7 +52,7 @@ export default function Reports() {
   const targetCal = profile?.target_calories || 2000
 
   return (
-    <div className="max-w-lg mx-auto px-4 pb-24">
+    <div className="max-w-lg lg:max-w-4xl xl:max-w-6xl mx-auto px-4 lg:px-6 pb-24">
       <h1 className="text-xl font-bold text-gray-800 py-3">饮食报告</h1>
 
       <div className="flex gap-2 mb-4">
@@ -76,7 +76,7 @@ export default function Reports() {
       ) : (
         <div className="space-y-4">
           {/* Averages */}
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
             <AvgCard label="日均热量" value={avgCals} unit="kcal" target={targetCal} color="text-primary-600" bg="bg-primary-50" barColor="bg-primary-500" />
             <AvgCard label="日均蛋白质" value={avgProtein} unit="g" target={Math.round(targetCal * 0.3 / 4)} color="text-green-600" bg="bg-green-50" barColor="bg-green-500" />
             <AvgCard label="日均碳水" value={avgCarbs} unit="g" target={Math.round(targetCal * 0.45 / 4)} color="text-blue-600" bg="bg-blue-50" barColor="bg-blue-500" />

@@ -43,7 +43,7 @@ export default function Dashboard() {
   const targetCal = profile?.target_calories || 2000
 
   return (
-    <div className="max-w-lg mx-auto px-4 pb-24">
+    <div className="max-w-lg lg:max-w-4xl xl:max-w-6xl mx-auto px-4 lg:px-6 pb-24">
       <div className="flex items-center justify-between py-4">
         <div>
           <h1 className="text-xl font-bold text-gray-800">仪表盘</h1>
@@ -62,7 +62,7 @@ export default function Dashboard() {
         <div className="space-y-4">
           {/* Profile Quick Stats */}
           {profile && (
-            <div className="grid grid-cols-3 gap-2 text-center">
+            <div className="grid grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-2 text-center">
               <div className="bg-white rounded-xl shadow-sm p-3">
                 <p className="text-[10px] text-gray-500">BMI</p>
                 <p className="text-sm font-bold text-gray-800">{profile.bmi?.toFixed(1) || '-'}</p>
@@ -79,7 +79,7 @@ export default function Dashboard() {
           )}
 
           {/* Stats Cards */}
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
             <StatCard label="今日摄入" value={total.calories} unit="kcal" target={targetCal} color="text-orange-600" bg="bg-orange-50" />
             <StatCard label="蛋白质" value={total.protein} unit="g" target={60} color="text-red-600" bg="bg-red-50" />
             <StatCard label="碳水" value={total.carbs} unit="g" target={225} color="text-blue-600" bg="bg-blue-50" />
