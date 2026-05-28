@@ -71,3 +71,5 @@ vm/
 *.zip
 *.tar.gz
 *.7z
+
+.vercel
