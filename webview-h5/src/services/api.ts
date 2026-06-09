@@ -40,6 +40,14 @@ export const getMe = () => api.get('/users/me')
 export const updateProfile = (data: Record<string, unknown>) =>
   api.put('/users/profile', data)
 
+export const uploadAvatar = (file: File) => {
+  const formData = new FormData()
+  formData.append('file', file)
+  return api.put('/users/avatar', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  })
+}
+
 export const calculate = (params: Record<string, string | number>) =>
   api.get('/users/calculator', { params })
 

@@ -1,4 +1,6 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+import base64
+
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_user
@@ -109,3 +111,31 @@ def calculate(
     current_user: User = Depends(get_current_user),
 ):
     return full_calculation(weight, height, age, gender, activity_level, goal)
+
+
+@router.put("/users/avatar")
+async def upload_avatar(
+    file: UploadFile = File(...),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    if not file.content_type or not file.content_type.startswith("image/"):
+        raise HTTPException(status_code=400, detail="请上传图片文件")
+
+    contents = await file.read()
+    if len(contents) > 2 * 1024 * 1024:
+        raise HTTPException(status_code=400, detail="图片大小不能超过 2MB")
+
+    b64 = base64.b64encode(contents).decode("utf-8")
+    avatar_url = f"data:{file.content_type};base64,{b64}"
+
+    profile = get_profile(db, current_user.id)
+    if profile is None:
+        profile = UserProfile(user_id=current_user.id, avatar_url=avatar_url)
+        db.add(profile)
+    else:
+        profile.avatar_url = avatar_url
+    db.commit()
+    db.refresh(profile)
+
+    return {"avatar_url": avatar_url}

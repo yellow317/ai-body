@@ -40,6 +40,7 @@ class UserProfile(Base):
     tdee = Column(Numeric(8, 2))
     bmi = Column(Numeric(5, 2))
     body_fat = Column(Numeric(5, 2))
+    avatar_url = Column(Text, nullable=True)
     created_at = Column(DateTime, server_default=func.now())
     updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
 

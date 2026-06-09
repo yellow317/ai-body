@@ -1,6 +1,6 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useAuth } from '../hooks/useAuth'
-import { getMe, updateProfile } from '../services/api'
+import { getMe, updateProfile, uploadAvatar } from '../services/api'
 import type { UserProfile } from '../types'
 
 type ProfileForm = {
@@ -29,11 +29,28 @@ function profileToForm(p: UserProfile): ProfileForm {
 }
 
 export default function Settings() {
-  const { user, profile, setProfile, logout } = useAuth()
+  const { user, profile, setProfile, refreshProfile, logout } = useAuth()
   const [form, setForm] = useState<ProfileForm>(DEFAULT_FORM)
   const [ready, setReady] = useState(false)
   const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
+  const avatarInputRef = useRef<HTMLInputElement>(null)
+
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    if (!file.type.startsWith('image/') || file.size > 2 * 1024 * 1024) {
+      setMessage({ type: 'error', text: '请选择小于 2MB 的图片文件' })
+      return
+    }
+    try {
+      await uploadAvatar(file)
+      await refreshProfile()
+      setMessage({ type: 'success', text: '头像更新成功' })
+    } catch {
+      setMessage({ type: 'error', text: '头像上传失败，请重试' })
+    }
+  }
 
   const loadProfile = useCallback(async () => {
     try {
@@ -163,6 +180,35 @@ export default function Settings() {
           {/* Account info */}
           <div className="bg-white rounded-xl shadow-md p-6">
             <h3 className="text-sm font-semibold text-gray-600 mb-4">账户信息</h3>
+            <div className="flex items-center space-x-4 mb-4">
+              <div
+                onClick={() => avatarInputRef.current?.click()}
+                className="w-16 h-16 bg-primary-500 rounded-full flex items-center justify-center text-white text-2xl font-bold cursor-pointer hover:ring-2 hover:ring-primary-300 overflow-hidden flex-shrink-0"
+                title="点击更换头像"
+              >
+                {profile?.avatar_url ? (
+                  <img src={profile.avatar_url} alt="头像" className="w-full h-full object-cover" />
+                ) : (
+                  user?.username?.[0]?.toUpperCase()
+                )}
+              </div>
+              <div>
+                <p className="text-sm font-medium text-gray-800">{user?.username}</p>
+                <button
+                  onClick={() => avatarInputRef.current?.click()}
+                  className="text-xs text-primary-600 hover:text-primary-700 mt-0.5"
+                >
+                  更换头像
+                </button>
+              </div>
+              <input
+                ref={avatarInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleAvatarUpload}
+                className="hidden"
+              />
+            </div>
             <div className="space-y-3">
               <div>
                 <p className="text-xs text-gray-500">用户名</p>

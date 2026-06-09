@@ -20,6 +20,7 @@ export interface UserProfile {
   tdee?: number
   bmi?: number
   body_fat?: number
+  avatar_url?: string | null
 }
 
 export interface Food {

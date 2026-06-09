@@ -47,6 +47,15 @@ def startup():
         from app.db.database import Base, engine, SessionLocal
         Base.metadata.create_all(bind=engine)
 
+        # Handle migrations for existing databases
+        from sqlalchemy import text
+        with engine.connect() as conn:
+            # Add avatar_url column if missing
+            cols = [row[1] for row in conn.execute(text("PRAGMA table_info(user_profiles)")).fetchall()] if "sqlite" in str(engine.url) else []
+            if cols and "avatar_url" not in cols:
+                conn.execute(text("ALTER TABLE user_profiles ADD COLUMN avatar_url TEXT"))
+                conn.commit()
+
         # Seed foods if empty
         from app.models.food import Food
         db = SessionLocal()

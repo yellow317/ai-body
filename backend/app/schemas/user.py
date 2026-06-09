@@ -76,6 +76,7 @@ class UserProfileResponse(BaseModel):
     tdee: float | None = None
     bmi: float | None = None
     body_fat: float | None = None
+    avatar_url: str | None = None
     created_at: datetime
     updated_at: datetime
 

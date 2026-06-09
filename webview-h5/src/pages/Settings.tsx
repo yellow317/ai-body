@@ -1,7 +1,7 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
-import { getMe, updateProfile } from '../services/api'
+import { getMe, updateProfile, uploadAvatar } from '../services/api'
 import { useToast } from '../components/Toast'
 import type { UserProfile } from '../types'
 
@@ -36,6 +36,21 @@ export default function Settings() {
   const [saving, setSaving] = useState(false)
   const [showForm, setShowForm] = useState(false)
   const [loaded, setLoaded] = useState(false)
+  const avatarInputRef = useRef<HTMLInputElement>(null)
+
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    if (!file.type.startsWith('image/') || file.size > 2 * 1024 * 1024) {
+      toast('请选择小于 2MB 的图片文件', 'error')
+      return
+    }
+    try {
+      await uploadAvatar(file)
+      await refreshUser()
+      toast('头像更新成功', 'success')
+    } catch { toast('头像上传失败', 'error') }
+  }
 
   const loadProfile = useCallback(async () => {
     try {
@@ -102,6 +117,35 @@ export default function Settings() {
         {/* User Info */}
         <div className="bg-white rounded-xl shadow-sm p-4">
           <h3 className="text-sm font-semibold text-gray-600 mb-3">账号信息</h3>
+          <div className="flex items-center space-x-3 mb-3">
+            <div
+              onClick={() => avatarInputRef.current?.click()}
+              className="w-14 h-14 bg-primary-500 rounded-full flex items-center justify-center text-white text-xl font-bold cursor-pointer hover:ring-2 hover:ring-primary-300 overflow-hidden flex-shrink-0"
+              title="点击更换头像"
+            >
+              {profile?.avatar_url ? (
+                <img src={profile.avatar_url} alt="头像" className="w-full h-full object-cover" />
+              ) : (
+                user?.username?.[0]?.toUpperCase()
+              )}
+            </div>
+            <div>
+              <p className="font-medium text-gray-800">{user?.username}</p>
+              <button
+                onClick={() => avatarInputRef.current?.click()}
+                className="text-xs text-primary-600"
+              >
+                更换头像
+              </button>
+            </div>
+            <input
+              ref={avatarInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleAvatarUpload}
+              className="hidden"
+            />
+          </div>
           <div className="space-y-2 text-sm">
             <div className="flex justify-between"><span className="text-gray-500">用户名</span><span className="font-medium text-gray-800">{user?.username}</span></div>
             <div className="flex justify-between"><span className="text-gray-500">邮箱</span><span className="font-medium text-gray-800">{user?.email}</span></div>

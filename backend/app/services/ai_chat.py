@@ -284,7 +284,22 @@ def analyze_food_image(image_base64: str, description: str) -> tuple[str, dict |
     # Step 4: Parse JSON food data from the reply
     food_data = _parse_food_json(reply)
 
-    return reply, food_data
+    # Step 5: Remove JSON block from the reply text
+    cleaned_reply = _strip_json_from_reply(reply)
+
+    return cleaned_reply, food_data
+
+
+def _strip_json_from_reply(text: str) -> str:
+    """Remove JSON code blocks and standalone JSON objects from AI reply."""
+    import re
+    # Remove ```json ... ``` blocks
+    text = re.sub(r"```json\s*\{.*?\}\s*```", "", text, flags=re.DOTALL)
+    # Remove standalone JSON objects with food_name
+    text = re.sub(r'\{[^{}]*"food_name"[^{}]*\}', "", text)
+    # Clean up extra whitespace
+    text = re.sub(r"\n{3,}", "\n\n", text)
+    return text.strip()
 
 
 def _parse_food_json(text: str) -> dict | None:

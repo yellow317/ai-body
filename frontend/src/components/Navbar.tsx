@@ -1,15 +1,33 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
+import { uploadAvatar } from '../services/api'
 
 export default function Navbar() {
-  const { user, logout } = useAuth()
+  const { user, profile, logout, refreshProfile } = useAuth()
   const navigate = useNavigate()
   const [menuOpen, setMenuOpen] = useState(false)
+  const avatarInputRef = useRef<HTMLInputElement>(null)
 
   const handleLogout = () => {
     logout()
     navigate('/')
+  }
+
+  const handleAvatarClick = () => {
+    avatarInputRef.current?.click()
+  }
+
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    if (!file.type.startsWith('image/') || file.size > 2 * 1024 * 1024) return
+    try {
+      await uploadAvatar(file)
+      await refreshProfile()
+    } catch {
+      // ignore
+    }
   }
 
   return (
@@ -37,8 +55,16 @@ export default function Navbar() {
                     onClick={() => setMenuOpen(!menuOpen)}
                     className="flex items-center space-x-1 text-gray-700 hover:text-primary-600"
                   >
-                    <div className="w-8 h-8 bg-primary-500 rounded-full flex items-center justify-center text-white text-sm font-bold">
-                      {user.username[0].toUpperCase()}
+                    <div
+                      onClick={handleAvatarClick}
+                      className="w-8 h-8 bg-primary-500 rounded-full flex items-center justify-center text-white text-sm font-bold cursor-pointer hover:ring-2 hover:ring-primary-300 overflow-hidden flex-shrink-0"
+                      title="点击更换头像"
+                    >
+                      {profile?.avatar_url ? (
+                        <img src={profile.avatar_url} alt="头像" className="w-full h-full object-cover" />
+                      ) : (
+                        user.username[0].toUpperCase()
+                      )}
                     </div>
                     <span>{user.username}</span>
                   </button>
@@ -91,6 +117,14 @@ export default function Navbar() {
           </div>
         )}
       </div>
+
+      <input
+        ref={avatarInputRef}
+        type="file"
+        accept="image/*"
+        onChange={handleAvatarUpload}
+        className="hidden"
+      />
     </nav>
   )
 }
