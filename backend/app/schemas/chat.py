@@ -23,7 +23,7 @@ class ChatMessageResponse(BaseModel):
     role: str
     content: str
     created_at: datetime
-    food_analysis: Optional[FoodImageAnalysisData] = None
+    food_analysis: Optional[list[FoodImageAnalysisData]] = None
 
     class Config:
         from_attributes = True

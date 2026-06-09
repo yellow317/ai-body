@@ -182,9 +182,9 @@ def call_deepseek(messages: list[dict]) -> str:
         return "无法连接到 AI 服务，请检查网络连接。"
 
 
-def analyze_food_image(image_base64: str, description: str) -> tuple[str, dict | None]:
+def analyze_food_image(image_base64: str, description: str) -> tuple[str, list | None]:
     """Analyze food image using Cloudflare Workers AI vision + GPT for nutrition.
-    Returns (reply_text, food_data_dict_or_None)."""
+    Returns (reply_text, food_data_list_or_None)."""
     vision_prompt = "请描述这张食物图片：列出看到的食物名称、估计的份量大小。如果是中餐，请特别注意识别常见的中国菜品。用中文简短回复，不超过100字。"
 
     # Step 1: Get image description from Cloudflare Workers AI (free vision model)
@@ -259,12 +259,12 @@ def analyze_food_image(image_base64: str, description: str) -> tuple[str, dict |
         if user_prompt:
             nutrition_prompt += f"\n用户补充说明：{user_prompt}"
         nutrition_prompt += (
-            "\n\n请提供：\n1. 食物名称和份量\n2. 估算总热量（kcal）\n3. 蛋白质、碳水、脂肪含量估算\n4. 健康建议"
-            "\n\n最后，请用以下JSON格式输出营养成分数据（仅数值，不要包含单位）："
-            "\n```json\n{\"food_name\":\"食物名称\",\"calories_per_100g\":热量每100g,"
+            "\n\n请提供：\n1. 列出每种食物的名称和份量\n2. 每种食物的热量和营养成分估算\n3. 总体健康建议"
+            "\n\n最后，请用JSON数组格式输出每种食物的营养成分（仅数值，不要包含单位）："
+            "\n```json\n[{\"food_name\":\"食物名称\",\"calories_per_100g\":热量每100g,"
             "\"protein\":蛋白质g每100g,\"carbs\":碳水g每100g,\"fat\":脂肪g每100g,"
-            "\"estimated_quantity\":估算的份量g,\"category\":\"staple|protein|vegetable|fruit|fat|beverage\"}\n```"
-            "\n用中文回复，控制在300字以内。"
+            "\"estimated_quantity\":估算的份量g,\"category\":\"staple|protein|vegetable|fruit|fat|beverage\"}]\n```"
+            "\n如果图片中有多种食物，请为每种食物分别输出一个JSON对象。用中文回复，控制在300字以内。"
         )
     else:
         nutrition_prompt = f"用户上传了一张食物图片，请根据以下信息分析："
@@ -282,7 +282,7 @@ def analyze_food_image(image_base64: str, description: str) -> tuple[str, dict |
     reply = call_deepseek([{"role": "user", "content": nutrition_prompt}])
 
     # Step 4: Parse JSON food data from the reply
-    food_data = _parse_food_json(reply)
+    food_data = _parse_food_json_array(reply)
 
     # Step 5: Remove JSON block from the reply text
     cleaned_reply = _strip_json_from_reply(reply)
@@ -291,51 +291,79 @@ def analyze_food_image(image_base64: str, description: str) -> tuple[str, dict |
 
 
 def _strip_json_from_reply(text: str) -> str:
-    """Remove JSON code blocks and standalone JSON objects from AI reply."""
+    """Remove all JSON code blocks and any leftover JSON structures from AI reply."""
     import re
-    # Remove ```json ... ``` blocks
-    text = re.sub(r"```json\s*\{.*?\}\s*```", "", text, flags=re.DOTALL)
+    # Remove all ``` blocks (with or without language tag)
+    text = re.sub(r"```[a-z]*\s*[\[\{].*?[\]\}]\s*```", "", text, flags=re.DOTALL)
+    # Remove standalone JSON arrays of food objects
+    text = re.sub(r'\[\s*\{[^}]*"food_name"[^}]*\}(?:\s*,\s*\{[^}]*"food_name"[^}]*\})*\s*\]', "", text, flags=re.DOTALL)
     # Remove standalone JSON objects with food_name
-    text = re.sub(r'\{[^{}]*"food_name"[^{}]*\}', "", text)
+    text = re.sub(r'\{[^}]*"food_name"[^}]*\}', "", text)
+    # Remove stray code fences without content
+    text = re.sub(r"```[a-z]*\s*```", "", text)
     # Clean up extra whitespace
     text = re.sub(r"\n{3,}", "\n\n", text)
+    text = re.sub(r"^\s*,\s*", "", text)
     return text.strip()
 
 
-def _parse_food_json(text: str) -> dict | None:
-    """Extract food nutritional JSON from AI response."""
+def _parse_food_json_array(text: str) -> list | None:
+    """Extract food nutritional JSON array from AI response. Returns a list of food dicts."""
     import json
     import re
 
-    # Try ```json ... ``` block first
-    json_match = re.search(r"```json\s*(\{.*?\})\s*```", text, re.DOTALL)
-    if not json_match:
-        # Try standalone JSON object
-        json_match = re.search(r'\{[^{}]*"food_name"[^{}]*\}', text, re.DOTALL)
+    category_map = {
+        "主食": "staple", "staple": "staple",
+        "蛋白质": "protein", "protein": "protein",
+        "蔬菜": "vegetable", "vegetable": "vegetable",
+        "水果": "fruit", "fruit": "fruit",
+        "脂肪": "fat", "fat": "fat",
+        "饮品": "beverage", "beverage": "beverage",
+    }
 
-    if json_match:
+    def _normalize(item: dict) -> dict:
+        cat = item.get("category", "staple")
+        return {
+            "food_name": item.get("food_name", "未知食物"),
+            "calories_per_100g": float(item.get("calories_per_100g", 0)),
+            "protein": float(item.get("protein", 0)),
+            "carbs": float(item.get("carbs", 0)),
+            "fat": float(item.get("fat", 0)),
+            "estimated_quantity": float(item.get("estimated_quantity", 200)),
+            "category": category_map.get(cat, cat),
+        }
+
+    # Try to extract JSON array from ``` block or standalone
+    json_str = None
+    # Match ```json [...] ``` or ```[...]```
+    m = re.search(r"```[a-z]*\s*(\[.*?\])\s*```", text, re.DOTALL)
+    if m:
+        json_str = m.group(1)
+    else:
+        # Match standalone JSON array
+        m = re.search(r'\[\s*\{[^}]*"food_name"[^}]*\}(?:\s*,\s*\{[^}]*"food_name"[^}]*\})*\s*\]', text, re.DOTALL)
+        if m:
+            json_str = m.group(0)
+
+    if json_str:
         try:
-            data = json.loads(json_match.group(1) if json_match.lastindex else json_match.group(0))
-            category_map = {
-                "主食": "staple", "staple": "staple",
-                "蛋白质": "protein", "protein": "protein",
-                "蔬菜": "vegetable", "vegetable": "vegetable",
-                "水果": "fruit", "fruit": "fruit",
-                "脂肪": "fat", "fat": "fat",
-                "饮品": "beverage", "beverage": "beverage",
-            }
-            cat = data.get("category", "staple")
-            return {
-                "food_name": data.get("food_name", "未知食物"),
-                "calories_per_100g": float(data.get("calories_per_100g", 0)),
-                "protein": float(data.get("protein", 0)),
-                "carbs": float(data.get("carbs", 0)),
-                "fat": float(data.get("fat", 0)),
-                "estimated_quantity": float(data.get("estimated_quantity", 200)),
-                "category": category_map.get(cat, cat),
-            }
+            data = json.loads(json_str)
+            if isinstance(data, list):
+                return [_normalize(item) for item in data]
+            if isinstance(data, dict):
+                return [_normalize(data)]
         except (json.JSONDecodeError, ValueError, TypeError):
             pass
+
+    # Fallback: try to find a single JSON object
+    m = re.search(r'\{[^}]*"food_name"[^}]*\}', text, re.DOTALL)
+    if m:
+        try:
+            data = json.loads(m.group(0))
+            return [_normalize(data)]
+        except (json.JSONDecodeError, ValueError, TypeError):
+            pass
+
     return None
 
 

@@ -274,21 +274,25 @@ export default function Chat() {
                 >
                   {msg.content}
                 </div>
-                {/* Record to diary button */}
-                {msg.role === 'assistant' && msg.food_analysis && (
-                  <div className="mt-2 ml-1">
-                    <button
-                      onClick={() => handleRecordToDiary(msg.food_analysis!)}
-                      className="inline-flex items-center space-x-1 bg-green-50 text-green-700 border border-green-200 px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-green-100 transition-colors"
-                    >
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
-                      </svg>
-                      <span>记录到饮食日记</span>
-                    </button>
-                    <span className="ml-2 text-xs text-gray-400">
-                      {msg.food_analysis.food_name} · 约{msg.food_analysis.calories_per_100g}kcal/100g
-                    </span>
+                {/* Record to diary buttons for each food */}
+                {msg.role === 'assistant' && msg.food_analysis && msg.food_analysis.length > 0 && (
+                  <div className="mt-2 ml-1 space-y-1.5">
+                    {msg.food_analysis.map((food, idx) => (
+                      <div key={idx} className="flex items-center space-x-2">
+                        <button
+                          onClick={() => handleRecordToDiary(food)}
+                          className="inline-flex items-center space-x-1 bg-green-50 text-green-700 border border-green-200 px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-green-100 transition-colors"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+                          </svg>
+                          <span>记录到饮食日记</span>
+                        </button>
+                        <span className="text-xs text-gray-400">
+                          {food.food_name} · 约{food.calories_per_100g}kcal/100g
+                        </span>
+                      </div>
+                    ))}
                   </div>
                 )}
                 <p className={`text-xs text-gray-400 mt-1 ${msg.role === 'user' ? 'text-right mr-1' : 'ml-1'}`}>

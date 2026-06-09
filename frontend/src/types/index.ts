@@ -114,7 +114,7 @@ export interface ChatMessage {
   role: 'user' | 'assistant'
   content: string
   created_at: string
-  food_analysis?: FoodImageAnalysis | null
+  food_analysis?: FoodImageAnalysis[] | null
 }
 
 export interface ChatHistoryResponse {

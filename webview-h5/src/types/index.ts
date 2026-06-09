@@ -95,7 +95,7 @@ export interface ChatMessage {
   id: number
   role: 'user' | 'assistant'
   content: string
-  food_analysis?: FoodImageAnalysis | null
+  food_analysis?: FoodImageAnalysis[] | null
   created_at: string
 }
 

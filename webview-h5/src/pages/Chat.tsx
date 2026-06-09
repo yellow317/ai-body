@@ -189,16 +189,20 @@ export default function Chat() {
                   <div className="w-7 h-7 rounded-full bg-gray-300 flex items-center justify-center text-white text-xs font-bold ml-2 flex-shrink-0 mt-1">U</div>
                 )}
               </div>
-              {/* Record to diary button for assistant messages with food_analysis */}
-              {msg.role === 'assistant' && msg.food_analysis && (
-                <div className="flex justify-start mt-1.5">
-                  <div className="w-7 mr-2 flex-shrink-0" />
-                  <button
-                    onClick={() => handleRecordToDiary(msg.food_analysis!)}
-                    className="px-3 py-1.5 bg-green-50 border border-green-200 text-green-700 text-xs rounded-full font-medium active:bg-green-100 transition-colors"
-                  >
-                    📝 记录到饮食日记
-                  </button>
+              {/* Record to diary buttons for each food */}
+              {msg.role === 'assistant' && msg.food_analysis && msg.food_analysis.length > 0 && (
+                <div className="mt-1.5 space-y-1">
+                  {msg.food_analysis.map((food, idx) => (
+                    <div key={idx} className="flex justify-start">
+                      <div className="w-7 mr-2 flex-shrink-0" />
+                      <button
+                        onClick={() => handleRecordToDiary(food)}
+                        className="px-3 py-1.5 bg-green-50 border border-green-200 text-green-700 text-xs rounded-full font-medium active:bg-green-100 transition-colors"
+                      >
+                        📝 记录 {food.food_name} · {food.calories_per_100g}kcal/100g
+                      </button>
+                    </div>
+                  ))}
                 </div>
               )}
             </div>
