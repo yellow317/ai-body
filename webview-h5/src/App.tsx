@@ -1,11 +1,10 @@
-import { useEffect, useRef } from 'react'
+import { useEffect } from 'react'
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { AuthProvider, useAuth } from './hooks/useAuth'
 import { ToastProvider } from './components/Toast'
 import ProtectedRoute from './components/ProtectedRoute'
 import TabBar from './components/TabBar'
 import { isInMiniProgram, postMessageToMiniProgram } from './utils/wechat'
-import { uploadAvatar } from './services/api'
 import Home from './pages/Home'
 import Login from './pages/Login'
 import Register from './pages/Register'
@@ -19,21 +18,8 @@ import Reports from './pages/Reports'
 import Settings from './pages/Settings'
 
 function AppRoutes() {
-  const { user, profile, loading, refreshUser } = useAuth()
+  const { user, profile, loading } = useAuth()
   const location = useLocation()
-  const avatarInputRef = useRef<HTMLInputElement>(null)
-
-  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (!file) return
-    if (!file.type.startsWith('image/') || file.size > 2 * 1024 * 1024) return
-    try {
-      await uploadAvatar(file)
-      await refreshUser()
-    } catch {
-      // ignore
-    }
-  }
 
   // Sync auth state to Mini Program
   useEffect(() => {
@@ -67,9 +53,9 @@ function AppRoutes() {
           <div className="max-w-lg mx-auto px-4 h-12 flex items-center justify-between">
             <span className="text-base font-bold text-primary-600">AI 健康饮食</span>
             <div
-              onClick={() => avatarInputRef.current?.click()}
+              onClick={() => window.location.hash = '#/settings'}
               className="w-8 h-8 bg-primary-500 rounded-full flex items-center justify-center text-white text-sm font-bold cursor-pointer hover:ring-2 hover:ring-primary-300 overflow-hidden flex-shrink-0"
-              title="点击更换头像"
+              title="个人设置"
             >
               {profile?.avatar_url ? (
                 <img src={profile.avatar_url} alt="头像" className="w-full h-full object-cover" />
@@ -77,13 +63,6 @@ function AppRoutes() {
                 user.username[0].toUpperCase()
               )}
             </div>
-            <input
-              ref={avatarInputRef}
-              type="file"
-              accept="image/*"
-              onChange={handleAvatarUpload}
-              className="hidden"
-            />
           </div>
         </header>
       )}
