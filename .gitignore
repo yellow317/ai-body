@@ -73,3 +73,6 @@ vm/
 *.7z
 
 .vercel
+
+.dev.vars*
+!.dev.vars.example
